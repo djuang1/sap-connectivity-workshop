@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ws="http://www.mulesoft.org/schema/mule/ws" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:sap="http://www.mulesoft.org/schema/mule/sap" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sap http://www.mulesoft.org/schema/mule/sap/current/mule-sap.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/ws http://www.mulesoft.org/schema/mule/ws/current/mule-ws.xsd">
+    <sap:connector name="SAP" validateConnections="true" doc:name="SAP" 
+		jcoAsHost="${sap.jcoAsHost}" 
+    	jcoUser="${sap.jcoUser}" 
+    	jcoPasswd="${sap.jcoPasswd}" 
+    	jcoSysnr="${sap.jcoSysnr}" 
+    	jcoClient="${sap.jcoClient}" 
+    	jcoLang="${sap.jcoLang}" 
+    	jcoPoolCapacity="${sap.jcoPoolCapacity}" 
+    	jcoPeakLimit="${sap.jcoPeakLimit}" />
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <sfdc:config name="Salesforce__Basic_Authentication" username="dreamforce2014@mulesoft.com" password="Mule1379" securityToken="Q0Os9rS6lhn3MlYIfJe7Z3XK" doc:name="Salesforce: Basic Authentication"/>
+    <ws:consumer-config name="Web_Service_Consumer" wsdlLocation="http://23.21.160.191/ServiceDesk/AccountsService.svc?wsdl" service="AccountsService" port="BasicHttpBinding_IAccountsService" serviceAddress="http://23.21.160.191/ServiceDesk/AccountsService.svc" doc:name="Web Service Consumer"/>
+    <flow name="sap-workshopFlow1">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+---
+{
+	"BAPI_CUSTOMER_GETLIST": {
+		import: {
+			MAXROWS: 5
+		},
+		export: {
+		},
+		tables: {
+			IDRANGE: {
+				row: {
+					SIGN: "I",
+					OPTION: "CP",
+					LOW: "*"
+				}
+			}
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <sap:xml-to-function xmlVersion="2" doc:name="XML to SAP Function (BAPI)"/>
+        <sap:outbound-endpoint exchange-pattern="request-response" connector-ref="SAP" type="function" functionName="BAPI_CUSTOMER_GETLIST" xmlVersion="2" outputXml="true" responseTimeout="10000" doc:name="SAP"/>
+        <json:xml-to-json-transformer doc:name="XML to JSON"/>
+    </flow>
+</mule>

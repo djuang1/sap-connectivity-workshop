@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:data-mapper="http://www.mulesoft.org/schema/mule/ee/data-mapper" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:sap="http://www.mulesoft.org/schema/mule/sap" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sap http://www.mulesoft.org/schema/mule/sap/current/mule-sap.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <sap:connector name="SAP" 
+    	jcoAsHost="${sap.jcoAsHost}" 
+    	jcoUser="${sap.jcoUser}" 
+    	jcoPasswd="${sap.jcoPasswd}" 
+    	jcoSysnr="${sap.jcoSysnr}" 
+    	jcoClient="${sap.jcoClient}" 
+    	jcoLang="${sap.jcoLang}" 
+    	validateConnections="true" 
+    	jcoPoolCapacity="${sap.jcoPoolCapacity}" 
+    	jcoPeakLimit="${sap.jcoPeakLimit}" 
+    	doc:name="SAP"/>
+    <flow name="sap-workshop-lab2Flow1">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/find" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+---
+//Some output fields where skipped as the structure is too deep (more than 2 levels).
+//To add missing fields click on the scaffold icon (second on the toolbar).
+{
+	"BAPI_CUSTOMER_FIND": {
+		import: {
+			MAX_CNT: 10,
+			PL_HOLD: "X"
+		},
+		export: {
+		},
+		tables: {
+			SELOPT_TAB: {
+				row: {
+					TABNAME: "KNA1",
+					FIELDNAME: "PSTLZ",
+					FIELDVALUE: "19115" 
+				}
+			}
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <sap:xml-to-function xmlVersion="2" doc:name="XML to SAP Function (BAPI)"/>
+        <sap:outbound-endpoint exchange-pattern="request-response" connector-ref="SAP" type="function" xmlVersion="2" outputXml="true" responseTimeout="10000" doc:name="SAP" functionName="BAPI_CUSTOMER_FIND"/>
+        <foreach collection="#[xpath('//BAPI_CUSTOMER_FIND/tables/RESULT_TAB/row')]" doc:name="For Each">
+
+            <set-variable doc:name="Variable" value="#[xpath3('CUSTOMER')]" variableName="id"/>
+        	<logger level="INFO" message="#[flowVars['id']]" doc:name="Logger"/>
+        	 
+        	
+        </foreach>
+    </flow>
+</mule>

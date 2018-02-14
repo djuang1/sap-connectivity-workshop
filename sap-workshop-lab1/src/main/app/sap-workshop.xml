@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:sap="http://www.mulesoft.org/schema/mule/sap" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/sap http://www.mulesoft.org/schema/mule/sap/current/mule-sap.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <sap:connector name="SAP" validateConnections="true" doc:name="SAP" 
+		jcoAsHost="${sap.jcoAsHost}" 
+    	jcoUser="${sap.jcoUser}" 
+    	jcoPasswd="${sap.jcoPasswd}" 
+    	jcoSysnr="${sap.jcoSysnr}" 
+    	jcoClient="${sap.jcoClient}" 
+    	jcoLang="${sap.jcoLang}" 
+    	jcoPoolCapacity="${sap.jcoPoolCapacity}" 
+    	jcoPeakLimit="${sap.jcoPeakLimit}" />
+    <flow name="sap-workshopFlow">
+        <sap:inbound-endpoint connector-ref="SAP" type="idoc" functionName="DEBMAS03" xmlVersion="2" outputXml="true" jcoGwHost="${sap.jcoGwHost}" jcoGwService="${sap.jcoGwService}" jcoProgramId="${sap.jcoProgramId}" jcoConnectionCount="${sap.jcoConnectionCount}" responseTimeout="10000" doc:name="SAP" rfcType="qrfc">
+            <sap:default-in-memory-tid-store/>
+        </sap:inbound-endpoint>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <file:outbound-endpoint path="/Users/dejim.juang/Desktop" outputPattern="CUSTOMER_DEBMAS03.xml" responseTimeout="10000" doc:name="File"/>
+    </flow>
+</mule>
